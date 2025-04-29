@@ -1,3 +1,4 @@
+
 import requests
 import pandas as pd
 import platform
@@ -50,13 +51,13 @@ def fetch_data(symbol, interval):
         return None
 
     df = pd.DataFrame(data["values"])
-    
+
     # Only convert numeric columns that actually exist
     numeric_cols = ['open', 'high', 'low', 'close']
     for col in numeric_cols:
         if col in df.columns:
             df[col] = df[col].astype(float)
-    
+
     df = df[::-1].reset_index(drop=True)
     return df
 
@@ -71,20 +72,14 @@ def analyze_data(df, interval):
     previous_close = df["close"].iloc[-2]
 
     # Candle movement
-    if latest_close > previous_close:
-        print("📈 Market rising (Bullish)")
-    else:
-        print("📉 Market falling (Bearish)")
+    market_trend = "Bullish" if latest_close > previous_close else "Bearish"
+    print(f"📈 Market Trend: {market_trend} (Close: {latest_close})")
 
-    # MA crossover
-    if df["MA5"].iloc[-1] > df["MA20"].iloc[-1]:
-        print("🟢 MA Crossover: MA5 > MA20 → BUY Signal")
-        signal = "BUY"
-    else:
-        print("🔴 MA Crossover: MA5 < MA20 → SELL Signal")
-        signal = "SELL"
+    # MA crossover (Buy or Sell Signal)
+    ma_signal = "BUY" if df["MA5"].iloc[-1] > df["MA20"].iloc[-1] else "SELL"
+    print(f"🟢 MA Crossover: MA5 > MA20 → {ma_signal} Signal")
 
-    # ATR Calculation
+    # ATR Calculation (Average True Range for volatility)
     df["H-L"] = df["high"] - df["low"]
     df["H-PC"] = abs(df["high"] - df["close"].shift(1))
     df["L-PC"] = abs(df["low"] - df["close"].shift(1))
@@ -93,13 +88,14 @@ def analyze_data(df, interval):
 
     atr = df["ATR"].iloc[-1]
     risk = 1.5  # You can adjust this
+    print(f"🔎 ATR (Volatility): {atr:.2f}")
 
     # SL / TP Suggestion
-    if latest_close > previous_close:
+    if market_trend == "Bullish":
         sl = latest_close - atr * risk
         tp = latest_close + atr * risk
         print(f"💡 SL (BUY): {sl:.2f} | TP (BUY): {tp:.2f}")
-    elif latest_close < previous_close:
+    elif market_trend == "Bearish":
         sl = latest_close + atr * risk
         tp = latest_close - atr * risk
         print(f"💡 SL (SELL): {sl:.2f} | TP (SELL): {tp:.2f}")
@@ -107,8 +103,20 @@ def analyze_data(df, interval):
         print("❔ No clear trade direction → No SL/TP")
         sl = tp = "N/A"  # No SL/TP if no clear trade direction
 
-    # Final Recommendation (send to Telegram)
-    return f"\n🔮 Final Recommendation: {signal}\nSL: {sl:.2f}\nTP: {tp:.2f}"
+    # Support and Resistance levels (can be a simple example or advanced calculation)
+    support_level = latest_close - atr
+    resistance_level = latest_close + atr
+    print(f"🔒 Support Level: {support_level:.2f} | 🔓 Resistance Level: {resistance_level:.2f}")
+
+    # Final Recommendation
+    recommendation = f"📊 Final Recommendation: {ma_signal} Signal\n" \
+                     f"📈 Trend: {market_trend}\n" \
+                     f"🟢 Moving Average Crossover: MA5 > MA20 → {ma_signal} Signal\n" \
+                     f"🔎 ATR (Volatility): {atr:.2f}\n" \
+                     f"💡 SL: {sl:.2f} | TP: {tp:.2f}\n" \
+                     f"🔒 Support: {support_level:.2f} | 🔓 Resistance: {resistance_level:.2f}"
+
+    return recommendation
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -133,4 +141,3 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=10000)
-
