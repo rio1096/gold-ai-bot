@@ -3,23 +3,19 @@ import pandas as pd
 import platform
 from flask import Flask, request
 
-# Optional sound alert (Windows only)
 if platform.system() == "Windows":
     import winsound
 
-# Telegram Bot settings
 bot_token = '7717076163:AAFzWU5dxRzBNNg7dm-UHgi7jQYYWmGNzs8'
 app = Flask(__name__)
 api_key = "c6e06c3072b34cab9798f6e0b56db499"
 symbol = "XAU/USD"
 
-# Send message to Telegram function
 def send_telegram_message(message, chat_id):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {'chat_id': chat_id, 'text': message}
     requests.post(url, data=payload)
 
-# Fetch market data from API
 def fetch_data(symbol, interval):
     url = f"https://api.twelvedata.com/time_series?symbol={symbol}&interval={interval}&outputsize=100&apikey={api_key}"
     response = requests.get(url)
@@ -37,7 +33,6 @@ def fetch_data(symbol, interval):
 
     return df[::-1].reset_index(drop=True)
 
-# Analyze data and generate signals
 def analyze_data(df, interval):
     df["MA5"] = df["close"].rolling(window=5).mean()
     df["MA20"] = df["close"].rolling(window=20).mean()
@@ -61,32 +56,13 @@ def analyze_data(df, interval):
     support_level = latest_close - atr
     resistance_level = latest_close + atr
 
-    # ✅ Signal Accuracy Calculation
-    correct_signals = 0
-    total_signals = 0
-    for i in range(20, len(df) - 1):  # start after MA20 is valid
-        signal = "BUY" if df["MA5"].iloc[i] > df["MA20"].iloc[i] else "SELL"
-        current_close = df["close"].iloc[i]
-        next_close = df["close"].iloc[i + 1]
-
-        if signal == "BUY" and next_close > current_close:
-            correct_signals += 1
-        elif signal == "SELL" and next_close < current_close:
-            correct_signals += 1
-
-        total_signals += 1
-
-    accuracy = (correct_signals / total_signals) * 100 if total_signals else 0
-
     return f"⏱ Timeframe: {interval}\n" \
            f"📈 Trend: {market_trend}\n" \
            f"📊 Signal: {ma_signal}\n" \
-           f"🎯 Accuracy: {accuracy:.1f}% (last {total_signals} signals)\n" \
            f"🔎 ATR: {atr:.2f}\n" \
            f"💡 SL: {sl:.2f} | TP: {tp:.2f}\n" \
            f"🔒 Support: {support_level:.2f} | 🔓 Resistance: {resistance_level:.2f}\n"
 
-# Flask route for webhook
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
@@ -96,7 +72,7 @@ def webhook():
         user_name = data['message']['chat'].get('username') or data['message']['chat'].get('first_name', 'Trader')
 
         if message == '/signals':
-            intervals = ["1h", "30min", "15min", "5min"]
+            intervals = ["1h", "30min", "15min", "5min"]  # Updated to include all timeframes
             full_message = f"📩 Hello {user_name}!\n📊 Multi-Timeframe Signal Summary:\n\n"
             for interval in intervals:
                 df = fetch_data(symbol, interval)
@@ -122,7 +98,5 @@ def webhook():
 
     return '', 200
 
-# Run Flask app
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=10000)
-
