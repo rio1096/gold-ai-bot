@@ -105,9 +105,10 @@ def analyze_data(df, interval):
         print(f"💡 SL (SELL): {sl:.2f} | TP (SELL): {tp:.2f}")
     else:
         print("❔ No clear trade direction → No SL/TP")
+        sl = tp = "N/A"  # No SL/TP if no clear trade direction
 
     # Final Recommendation (send to Telegram)
-    return f"\n🔮 Final Recommendation: {signal}"
+    return f"\n🔮 Final Recommendation: {signal}\nSL: {sl:.2f}\nTP: {tp:.2f}"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
