@@ -34,7 +34,6 @@ def fetch_data(symbol, interval):
     return df[::-1].reset_index(drop=True)
 
 def fetch_live_price(symbol):
-    # Fetch the live XAU/USD price from Twelve Data API
     url = f"https://api.twelvedata.com/price?symbol={symbol}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
@@ -63,8 +62,19 @@ def analyze_data(df, interval):
     atr = df["ATR"].iloc[-1]
 
     risk = 1.5
-    sl = latest_close - atr * risk if market_trend == "Bullish" else latest_close + atr * risk
-    tp = latest_close + atr * risk if market_trend == "Bullish" else latest_close - atr * risk
+    if ma_signal == "BUY":
+        sl = latest_close - atr * risk
+        tp = latest_close + atr * risk
+    else:
+        sl = latest_close + atr * risk
+        tp = latest_close - atr * risk
+
+    # ✅ Sanity fix: correct inverted SL/TP if they occur
+    if ma_signal == "BUY" and sl > tp:
+        sl, tp = tp, sl
+    elif ma_signal == "SELL" and sl < tp:
+        sl, tp = tp, sl
+
     support_level = latest_close - atr
     resistance_level = latest_close + atr
 
@@ -83,7 +93,6 @@ def webhook():
         chat_id = data['message']['chat']['id']
         user_name = data['message']['chat'].get('username') or data['message']['chat'].get('first_name', 'Trader')
 
-        # Fetch the live price
         live_price = fetch_live_price(symbol)
         if live_price is None:
             live_price_message = "❌ Error fetching live price."
@@ -91,9 +100,9 @@ def webhook():
             live_price_message = f"💰 Live XAU/USD Price: {live_price:.2f}"
 
         if message == '/signals':
-            intervals = ["1h", "30min", "15min", "5min"]  # Updated to include all timeframes
+            intervals = ["1h", "30min", "15min", "5min"]
             full_message = f"📩 Hello {user_name}!\n📊 Multi-Timeframe Signal Summary:\n\n"
-            full_message += live_price_message + "\n\n"  # Include the live price in the response
+            full_message += live_price_message + "\n\n"
             for interval in intervals:
                 df = fetch_data(symbol, interval)
                 if df is not None:
