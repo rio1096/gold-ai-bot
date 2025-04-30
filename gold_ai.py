@@ -3,7 +3,6 @@ import pandas as pd
 import platform
 import logging
 from flask import Flask, request
-import time
 
 if platform.system() == "Windows":
     import winsound
@@ -25,36 +24,35 @@ def send_telegram_message(message, chat_id):
     except Exception as e:
         logging.error(f"Telegram send error: {e}")
 
-# ✅ Fetch live price
+# ✅ Fetch live price (fixed version)
 def fetch_live_price(sym):
-    url = f"https://api.twelvedata.com/price?symbol={sym}&apikey={api_key}"
+    url = f"https://api.twelvedata.com/price?symbol={sym}:CUR&apikey={api_key}"
+    response = requests.get(url)
     try:
-        response = requests.get(url)
         data = response.json()
-        if response.status_code == 200 and "price" in data:
+        if "price" in data:
             return float(data["price"])
-        logging.error(f"Error fetching live price: {data}")
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching live price: {e}")
-    return None
+        else:
+            logging.error(f"Error: 'price' not found in the response. Response: {data}")
+            return None
+    except Exception as e:
+        logging.error(f"Exception while parsing response: {e}")
+        logging.error(f"Raw response: {response.content}")
+        return None
 
 # ✅ Fetch historical data
 def fetch_data(sym, interval):
     url = f"https://api.twelvedata.com/time_series?symbol={sym}&interval={interval}&outputsize=100&apikey={api_key}"
-    try:
-        response = requests.get(url)
-        data = response.json()
-        if "values" not in data:
-            logging.error(f"Error fetching {interval} data: {data}")
-            return None
-        df = pd.DataFrame(data["values"])
-        for col in ['open', 'high', 'low', 'close', 'volume']:
-            df[col] = df[col].astype(float)
-        df = df[::-1].reset_index(drop=True).dropna()
-        return df
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching data for {sym} at interval {interval}: {e}")
-    return None
+    response = requests.get(url)
+    data = response.json()
+    if "values" not in data:
+        logging.error(f"Error fetching {interval} data: {data}")
+        return None
+    df = pd.DataFrame(data["values"])
+    for col in ['open', 'high', 'low', 'close', 'volume']:
+        df[col] = df[col].astype(float)
+    df = df[::-1].reset_index(drop=True).dropna()
+    return df
 
 # ✅ Calculate technical indicators
 def calculate_indicators(df):
