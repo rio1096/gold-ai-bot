@@ -33,6 +33,18 @@ def fetch_data(symbol, interval):
 
     return df[::-1].reset_index(drop=True)
 
+def fetch_live_price(symbol):
+    # Fetch the live XAU/USD price from Twelve Data API
+    url = f"https://api.twelvedata.com/price?symbol={symbol}&apikey={api_key}"
+    response = requests.get(url)
+    data = response.json()
+    
+    if "price" in data:
+        return float(data["price"])
+    else:
+        print(f"❌ Error fetching live price for {symbol}: {data}")
+        return None
+
 def analyze_data(df, interval):
     df["MA5"] = df["close"].rolling(window=5).mean()
     df["MA20"] = df["close"].rolling(window=20).mean()
@@ -71,9 +83,17 @@ def webhook():
         chat_id = data['message']['chat']['id']
         user_name = data['message']['chat'].get('username') or data['message']['chat'].get('first_name', 'Trader')
 
+        # Fetch the live price
+        live_price = fetch_live_price(symbol)
+        if live_price is None:
+            live_price_message = "❌ Error fetching live price."
+        else:
+            live_price_message = f"💰 Live XAU/USD Price: {live_price:.2f}"
+
         if message == '/signals':
             intervals = ["1h", "30min", "15min", "5min"]  # Updated to include all timeframes
             full_message = f"📩 Hello {user_name}!\n📊 Multi-Timeframe Signal Summary:\n\n"
+            full_message += live_price_message + "\n\n"  # Include the live price in the response
             for interval in intervals:
                 df = fetch_data(symbol, interval)
                 if df is not None:
@@ -85,13 +105,13 @@ def webhook():
             df = fetch_data(symbol, "1h")
             if df is not None:
                 response = analyze_data(df, "1h")
-                send_telegram_message(f"📩 Hello {user_name}!\n{response}", chat_id)
+                send_telegram_message(f"📩 Hello {user_name}!\n{live_price_message}\n{response}", chat_id)
 
         elif message == '/latest_signal':
             df = fetch_data(symbol, "5min")
             if df is not None:
                 response = analyze_data(df, "5min")
-                send_telegram_message(f"📩 Hello {user_name}!\n{response}", chat_id)
+                send_telegram_message(f"📩 Hello {user_name}!\n{live_price_message}\n{response}", chat_id)
 
         else:
             send_telegram_message("🤖 Unknown command.\nTry /signals, /status, or /latest_signal.", chat_id)
