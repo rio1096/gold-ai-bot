@@ -6,7 +6,7 @@ from flask import Flask, request
 if platform.system() == "Windows":
     import winsound
 
-bot_token = '7717076163:AAFzWU5dxRzBNNg7dm-UHgi7jQYYWmGNzs8'
+bot_token = '7717076163:AAG-aZbOa4TpP4PO1JdQtYowxNqrgbYT7S4'
 app = Flask(__name__)
 api_key = "c6e06c3072b34cab9798f6e0b56db499"
 symbol = "XAU/USD"
