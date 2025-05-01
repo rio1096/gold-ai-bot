@@ -1,12 +1,19 @@
+from dotenv import load_dotenv
+import os
 import requests
 import pandas as pd
 import platform
 from flask import Flask, request
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the Telegram bot token from the .env file
+bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+
 if platform.system() == "Windows":
     import winsound
 
-bot_token = '7717076163:AAG-aZbOa4TpP4PO1JdQtYowxNqrgbYT7S4'
 app = Flask(__name__)
 api_key = "c6e06c3072b34cab9798f6e0b56db499"
 symbol = "XAU/USD"
