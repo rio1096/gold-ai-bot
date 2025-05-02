@@ -118,7 +118,7 @@ def webhook():
             send_telegram_message(full_message.strip(), chat_id)
 
         elif message == '/long_term':
-            intervals = ["4h", "8h", "12h", "1day"]
+            intervals = ["4h", "8h", "1day"]
             full_message = f"📩 Hello {user_name}!\n📊 Long-Term Signal Summary:\n\n"
             full_message += live_price_message + "\n\n"
             for interval in intervals:
