@@ -44,7 +44,7 @@ def fetch_live_price(symbol):
     url = f"https://api.twelvedata.com/price?symbol={symbol}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
-    
+
     if "price" in data:
         return float(data["price"])
     else:
@@ -117,6 +117,17 @@ def webhook():
                     full_message += analysis + "\n" + ("─" * 40) + "\n"
             send_telegram_message(full_message.strip(), chat_id)
 
+        elif message == '/long_term':
+            intervals = ["4h", "8h", "12h", "1day"]
+            full_message = f"📩 Hello {user_name}!\n📊 Long-Term Signal Summary:\n\n"
+            full_message += live_price_message + "\n\n"
+            for interval in intervals:
+                df = fetch_data(symbol, interval)
+                if df is not None:
+                    analysis = analyze_data(df, interval)
+                    full_message += analysis + "\n" + ("─" * 40) + "\n"
+            send_telegram_message(full_message.strip(), chat_id)
+
         elif message == '/status':
             df = fetch_data(symbol, "1h")
             if df is not None:
@@ -130,7 +141,10 @@ def webhook():
                 send_telegram_message(f"📩 Hello {user_name}!\n{live_price_message}\n{response}", chat_id)
 
         else:
-            send_telegram_message("🤖 Unknown command.\nTry /signals, /status, or /latest_signal.", chat_id)
+            send_telegram_message(
+                "🤖 Unknown command.\nTry /signals, /status, /latest_signal, or /long_term.",
+                chat_id
+            )
 
     return '', 200
 
