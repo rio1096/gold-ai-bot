@@ -18,11 +18,6 @@ app = Flask(__name__)
 api_key = "c6e06c3072b34cab9798f6e0b56db499"
 symbol = "XAU/USD"
 
-# Add home route
-@app.route('/')
-def home():
-    return "Your Telegram Bot is running! 🎉"
-
 def send_telegram_message(message, chat_id):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {'chat_id': chat_id, 'text': message}
@@ -99,13 +94,7 @@ def analyze_data(df, interval):
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    # Receive the incoming data from Telegram (POST request)
     data = request.get_json()
-    
-    # Debugging line to print the data received
-    print(f"Received data: {data}")
-
-    # Check if the 'message' key exists in the data (to confirm that it's a message)
     if "message" in data:
         message = data['message']['text']
         chat_id = data['message']['chat']['id']
@@ -129,7 +118,7 @@ def webhook():
             send_telegram_message(full_message.strip(), chat_id)
 
         elif message == '/long_term':
-            intervals = ["4h", "8h", "1day"]
+            intervals = ["4h", "8h", "12h", "1day"]
             full_message = f"📩 Hello {user_name}!\n📊 Long-Term Signal Summary:\n\n"
             full_message += live_price_message + "\n\n"
             for interval in intervals:
