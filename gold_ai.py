@@ -94,7 +94,13 @@ def analyze_data(df, interval):
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    # Receive the incoming data from Telegram (POST request)
     data = request.get_json()
+    
+    # Debugging line to print the data received
+    print(f"Received data: {data}")
+
+    # Check if the 'message' key exists in the data (to confirm that it's a message)
     if "message" in data:
         message = data['message']['text']
         chat_id = data['message']['chat']['id']
